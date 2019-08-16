@@ -24,10 +24,10 @@ public class ReadWriteConnection {
     }
 
     public void startRun() {
-    	requestToResponse = new ReadWriteThread(requestSocket, responseSocket, mStatusCallback);
+    	requestToResponse = new ReadWriteThread("request", requestSocket, responseSocket, mStatusCallback);
     	requestToResponse.setRun(true);
     	requestToResponse.start();
-    	responseToRequest = new ReadWriteThread(responseSocket, requestSocket, mStatusCallback);
+    	responseToRequest = new ReadWriteThread("response", responseSocket, requestSocket, mStatusCallback);
     	responseToRequest.setRun(true);
     	responseToRequest.start();
     }
@@ -44,7 +44,7 @@ public class ReadWriteConnection {
     private ReadWriteConnectionStatusCallback mStatusCallback = new ReadWriteConnectionStatusCallback(){
 		@Override
 		public void onReadWriteConnectionStatusChange(Socket request, Socket response, String flag, String status) {
-			
+			LogUtils.LOGD(TAG, "onReadWriteConnectionStatusChange flag = " + flag + ", status = " + status);
 			if (mReadWriteConnectionCallback != null) {
 				mReadWriteConnectionCallback.onReadWriteConnectionCallbackChange(request, response, flag, status);
 			}
@@ -57,11 +57,13 @@ public class ReadWriteConnection {
         private Socket responseSocket;
         private ReadWriteRunnable readWrite;
         private ReadWriteConnectionStatusCallback readWriteConnectionStatusCallback;
+        private String threadFlag;
         
-        public ReadWriteThread(Socket request, Socket response, ReadWriteConnectionStatusCallback callback) {
+        public ReadWriteThread(String flag, Socket request, Socket response, ReadWriteConnectionStatusCallback callback) {
             this.requestSocket = request;
             this.responseSocket = response;
             this.readWriteConnectionStatusCallback = callback;
+            this.threadFlag = flag;
         }
     	
         public void setRun(boolean run) {
@@ -78,7 +80,8 @@ public class ReadWriteConnection {
         
     	@Override
         public void run() {
-    		readWrite = new ReadWriteRunnable(requestSocket, responseSocket, readWriteConnectionStatusCallback);
+    		LogUtils.LOGD(TAG, "ReadWriteThread run threadFlag = " + threadFlag);
+    		readWrite = new ReadWriteRunnable(threadFlag, requestSocket, responseSocket, readWriteConnectionStatusCallback);
     		readWrite.run();
     	}
     }
@@ -90,11 +93,13 @@ public class ReadWriteConnection {
         private Socket responseSocket = null;
         private boolean running = true;
         private ReadWriteConnectionStatusCallback readWriteConnectionStatusCallback;
+        private String threadFlag;
         
-        public ReadWriteRunnable(Socket request, Socket response, ReadWriteConnectionStatusCallback callback) {
+        public ReadWriteRunnable(String flag, Socket request, Socket response, ReadWriteConnectionStatusCallback callback) {
             this.requestSocket = request;
             this.responseSocket = response;
             this.readWriteConnectionStatusCallback = callback;
+            this.threadFlag = flag;
         }
     	
         public void setRun(boolean run) {
@@ -107,6 +112,7 @@ public class ReadWriteConnection {
         
     	@Override
         public void run() {
+    		LogUtils.LOGD(TAG, "ReadWriteThread run threadFlag = " + threadFlag);
             byte[] buffer = new byte[1024*10];   
             InputStream is = null;
             OutputStream os = null;
@@ -129,11 +135,11 @@ public class ReadWriteConnection {
             }
             if (isException) {
             	if (readWriteConnectionStatusCallback != null) {
-            		readWriteConnectionStatusCallback.onReadWriteConnectionStatusChange(requestSocket, responseSocket, "erro", "exception");
+            		readWriteConnectionStatusCallback.onReadWriteConnectionStatusChange(requestSocket, responseSocket, threadFlag, "exception");
             	}
             } else {
             	if (readWriteConnectionStatusCallback != null) {
-            		readWriteConnectionStatusCallback.onReadWriteConnectionStatusChange(requestSocket, responseSocket, "normal", "exit");
+            		readWriteConnectionStatusCallback.onReadWriteConnectionStatusChange(requestSocket, responseSocket, threadFlag, "exit");
             	}
             }
         }

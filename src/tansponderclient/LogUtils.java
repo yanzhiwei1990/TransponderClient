@@ -11,6 +11,9 @@ public class LogUtils {
 		if (DEBUG_LOGD) {
 			System.out.println(tag + "---" + log);
 		}
+		/*RuntimeException ex = new RuntimeException(tag + "---" + log);
+		ex.fillInStackTrace();
+		ex.printStackTrace();*/
 	}
 	
 	public static void LOGE(String tag, String log) {
